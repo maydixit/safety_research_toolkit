@@ -100,7 +100,11 @@ def compute_perplexity(
         labels_t = pad_sequence(
             [e[2] for e in batch], batch_first=True, padding_value=IGNORE_INDEX
         ).to(device)
-        attention_mask = (input_ids != pad_id).long()
+        # Mask by sequence length, not token value: the pad id is often the
+        # EOS / end-of-turn id, which also appears inside the real text.
+        attention_mask = pad_sequence(
+            [torch.ones_like(e[1]) for e in batch], batch_first=True, padding_value=0
+        ).to(device)
 
         with torch.no_grad():
             logits = model(input_ids, attention_mask=attention_mask).logits[:, :-1, :]
